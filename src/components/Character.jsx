@@ -4,16 +4,21 @@ import { useGLTF, useAnimations } from "@react-three/drei";
 export function Character({ 
   scale = 1, 
   position = [0, 0.4, 1.8], 
-  animation = "Idle"
+  animation = "Idle" 
 }) {
   const group = useRef();
   const { scene, animations } = useGLTF("/models/man.glb");
   const { actions } = useAnimations(animations, group);
+  const currentAnimation = useRef(null);
 
   useEffect(() => {
-    Object.values(actions).forEach((action) => action.stop());
     if (actions[animation]) {
-      actions[animation].reset().fadeIn(0.5).play();
+      if (currentAnimation.current && currentAnimation.current !== actions[animation]) {
+        currentAnimation.current.fadeOut(0.3);
+      }
+
+      actions[animation].reset().fadeIn(0.3).play();
+      currentAnimation.current = actions[animation];
     }
   }, [animation, actions]);
 
