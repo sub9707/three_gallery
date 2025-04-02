@@ -14,10 +14,19 @@ export function Character({
   useEffect(() => {
     if (actions[animation]) {
       if (currentAnimation.current && currentAnimation.current !== actions[animation]) {
-        currentAnimation.current.fadeOut(0.3);
+        if (animation === "Jump") {
+          currentAnimation.current.fadeOut(0.1); // 빠른 전환
+          actions[animation].reset().fadeIn(0.2).play();
+          actions[animation].timeScale = 0.5; // 점프 속도 조절
+        } else {
+          currentAnimation.current.fadeOut(0.3);
+          actions[animation].reset().fadeIn(0.3).play();
+          actions[animation].timeScale = 1;
+        }
+      } else {
+        actions[animation].reset().play();
       }
-
-      actions[animation].reset().fadeIn(0.3).play();
+      
       currentAnimation.current = actions[animation];
     }
   }, [animation, actions]);
