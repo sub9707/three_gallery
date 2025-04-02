@@ -1,9 +1,9 @@
 import { useKeyboardControls } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody } from "@react-three/rapier";
 import { useControls } from "leva";
 import { useEffect, useRef, useState } from "react";
-import { MathUtils, Vector3 } from "three";
+import { AudioLoader, MathUtils, Vector3, AudioListener, Audio } from "three";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { Character } from "./Character";
 
@@ -31,7 +31,6 @@ const lerpAngle = (start, end, t) => {
 };
 
 export const CharacterController = () => {
-  // 이동 속도 및 회전 속도 설정
   const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED } = useControls(
     "Character Control",
     {
@@ -46,12 +45,13 @@ export const CharacterController = () => {
     }
   );
 
+  const { camera } = useThree();
   const rb = useRef();
   const container = useRef();
   const character = useRef();
   const [animation, setAnimation] = useState("Idle");
+  const walkSound = useRef(null);
 
-  // 회전 및 카메라 관련 설정
   const characterRotationTarget = useRef(0);
   const rotationTarget = useRef(0);
   const cameraTarget = useRef();
@@ -62,24 +62,19 @@ export const CharacterController = () => {
   const [, get] = useKeyboardControls();
   const isClicking = useRef(false);
 
-  // 점프 상태 및 속도 설정
   const isJumping = useRef(false);
   const isPreparing = useRef(false);
   const JUMP_FORCE = 8;
-  const jumpState = useRef("ready"); // "ready", "preparing", "rising", "falling", "landing"
+  const jumpState = useRef("ready");
   const jumpAnimationTimer = useRef(0);
   const jumpCooldown = useRef(false);
   const jumpTimer = useRef(null);
 
-  // 점프 애니메이션 지속 시간 설정
-  const JUMP_ANIMATION_MIN_TIME = 0.1; // 기존 0.5 → 0.3으로 감소
-  const JUMP_PREPARATION_TIME = 700; // 기존 500ms → 300ms으로 감소
-  
+  const JUMP_ANIMATION_MIN_TIME = 0.1;
+  const JUMP_PREPARATION_TIME = 700;
 
-  // 마우스 및 터치 이벤트 리스너 설정
   useEffect(() => {
-    const onMouseDown = () => { 
-    };
+    const onMouseDown = () => { };
     const onMouseUp = () => {
       isClicking.current = false;
     };
@@ -95,11 +90,11 @@ export const CharacterController = () => {
     };
   }, []);
 
+
   useFrame(({ camera, mouse }, delta) => {
     if (rb.current) {
       const vel = rb.current.linvel();
 
-      // 상하좌우 이동 설정
       const movement = { x: 0, z: 0 };
       if (get().forward) movement.z = 1;
       if (get().backward) movement.z = -1;
@@ -112,25 +107,24 @@ export const CharacterController = () => {
 
       let speed = get().run ? RUN_SPEED : WALK_SPEED;
 
-      // 점프 중이 아닐 때만 이동 애니메이션 변경
-      if ((movement.x !== 0 || movement.z !== 0) && !isJumping.current && !isPreparing.current) {
-        characterRotationTarget.current = Math.atan2(movement.x, movement.z);
-        vel.x =
-          Math.sin(rotationTarget.current + characterRotationTarget.current) * speed;
-        vel.z =
-          Math.cos(rotationTarget.current + characterRotationTarget.current) * speed;
-        setAnimation(speed === RUN_SPEED ? "Run" : "Walk");
-      } else if (!isJumping.current && !isPreparing.current) {
-        setAnimation("Idle");
-      }
-
-      // 점프 중이나 준비 중에도 이동 속도 적용
+      // 점프 중이나 준비 중에도 이동 속도 적용하되, 사운드는 재생하지 않음
       if ((isJumping.current || isPreparing.current) && (movement.x !== 0 || movement.z !== 0)) {
         characterRotationTarget.current = Math.atan2(movement.x, movement.z);
-        vel.x =
-          Math.sin(rotationTarget.current + characterRotationTarget.current) * speed * 0.8; // 점프 중에는 이동속도 감소
-        vel.z =
-          Math.cos(rotationTarget.current + characterRotationTarget.current) * speed * 0.8;
+        vel.x = Math.sin(rotationTarget.current + characterRotationTarget.current) * speed * 0.8; // 점프 중에는 이동속도 감소
+        vel.z = Math.cos(rotationTarget.current + characterRotationTarget.current) * speed * 0.8;
+        // 점프 중에는 이동 사운드 재생하지 않음 (stopWalkSound 호출)
+        stopWalkSound();
+      }
+      // 점프 중이 아닐 때만 이동 애니메이션 변경 및 사운드 재생
+      else if ((movement.x !== 0 || movement.z !== 0) && !isJumping.current && !isPreparing.current) {
+        characterRotationTarget.current = Math.atan2(movement.x, movement.z);
+        vel.x = Math.sin(rotationTarget.current + characterRotationTarget.current) * speed;
+        vel.z = Math.cos(rotationTarget.current + characterRotationTarget.current) * speed;
+        setAnimation(speed === RUN_SPEED ? "Run" : "Walk");
+        playWalkSound(speed);
+      } else if (!isJumping.current && !isPreparing.current) {
+        setAnimation("Idle");
+        stopWalkSound();
       }
 
       // 개선된 점프 기능 - 즉시 애니메이션 전환, 1초 후 실제 점프
@@ -139,6 +133,9 @@ export const CharacterController = () => {
         jumpState.current = "preparing";
         jumpAnimationTimer.current = 0;
         jumpCooldown.current = true;
+
+        // 점프 시작 시 걷기/달리기 사운드 중지
+        stopWalkSound();
 
         // 즉시 애니메이션 변경
         setAnimation(""); // 현재 애니메이션 초기화
@@ -159,7 +156,7 @@ export const CharacterController = () => {
         }, JUMP_PREPARATION_TIME + 200);
       }
 
-      // 점프 애니메이션 및 상태 관리 
+      // 점프 애니메이션 및 상태 관리
       if (isJumping.current) {
         jumpAnimationTimer.current += delta;
 
@@ -170,9 +167,7 @@ export const CharacterController = () => {
         }
 
         // 최소 애니메이션 시간을 보장하고, 바닥에 닿으면 착지 상태로 전환
-        if (rb.current.translation().y <= 2.1 &&
-          jumpState.current === "falling" &&
-          jumpAnimationTimer.current >= JUMP_ANIMATION_MIN_TIME) {
+        if (rb.current.translation().y <= 2.1 && jumpState.current === "falling" && jumpAnimationTimer.current >= JUMP_ANIMATION_MIN_TIME) {
           jumpState.current = "landing";
 
           // 착지 애니메이션 및 상태 전환 타이머
@@ -184,6 +179,8 @@ export const CharacterController = () => {
             const isMoving = get().forward || get().backward || get().left || get().right;
             if (isMoving) {
               setAnimation(get().run ? "Run" : "Walk");
+              // 착지 후 이동 중이면 이동 사운드 다시 재생
+              playWalkSound(get().run ? RUN_SPEED : WALK_SPEED);
             } else {
               setAnimation("Idle");
             }
@@ -191,7 +188,6 @@ export const CharacterController = () => {
         }
       }
 
-      // 캐릭터 회전 보간 적용
       character.current.rotation.y = lerpAngle(
         character.current.rotation.y,
         characterRotationTarget.current,
@@ -201,7 +197,6 @@ export const CharacterController = () => {
       rb.current.setLinvel(vel, false);
     }
 
-    // 카메라 이동 설정
     container.current.rotation.y = MathUtils.lerp(
       container.current.rotation.y,
       rotationTarget.current,
@@ -218,14 +213,43 @@ export const CharacterController = () => {
     }
   });
 
-  // 컴포넌트 언마운트 시 타이머 정리
+
+  const listener = useRef(camera.listener || new AudioListener());
   useEffect(() => {
-    return () => {
-      if (jumpTimer.current) {
-        clearTimeout(jumpTimer.current);
-      }
-    };
+    if (!camera.listener) {
+      camera.add(listener.current);
+      camera.listener = listener.current;
+    }
+  }, [camera]);
+
+  const audioLoader = useRef(new AudioLoader());
+  useEffect(() => {
+    audioLoader.current.load("/sounds/walk.wav", (buffer) => {
+      walkSound.current = new Audio(listener.current);
+      walkSound.current.setBuffer(buffer);
+      walkSound.current.setLoop(true);
+      walkSound.current.setVolume(0.5);
+    });
   }, []);
+
+  const playWalkSound = (speed) => {
+    if (walkSound.current) {
+      // Always update the playback rate regardless of whether it's playing
+      walkSound.current.setPlaybackRate(speed === RUN_SPEED ? 1.7 : 1.3);
+
+      // Only start playing if it's not already playing
+      if (!walkSound.current.isPlaying) {
+        walkSound.current.play();
+      }
+    }
+  };
+  const stopWalkSound = () => {
+    if (walkSound.current && walkSound.current.isPlaying) {
+      walkSound.current.stop();
+    }
+  };
+
+
 
   return (
     <RigidBody colliders={false} position={[0, 2, 0]} lockRotations ref={rb} friction={4}>
