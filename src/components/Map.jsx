@@ -11,7 +11,7 @@ export const Map = (props) => {
       <RigidBody type="fixed" colliders="cuboid">
         <mesh receiveShadow {...props}>
           <boxGeometry args={[50, 1, 50]} />
-          <meshStandardMaterial color="white" />
+          <meshStandardMaterial color="white" roughness={0.8} metalness={0.2} />
         </mesh>
       </RigidBody>
     </group>

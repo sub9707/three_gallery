@@ -3,13 +3,23 @@ import { useGLTF, useAnimations } from "@react-three/drei";
 
 export function Character({ 
   scale = 1, 
-  position = [0, 0.4, 1.8], 
+  position = [0, 0, 1.8], 
   animation = "Idle" 
 }) {
   const group = useRef();
   const { scene, animations } = useGLTF("/models/man.glb");
   const { actions } = useAnimations(animations, group);
   const currentAnimation = useRef(null);
+
+  // 모델의 모든 메시에 그림자 설정 추가
+  useEffect(() => {
+    scene.traverse((object) => {
+      if (object.isMesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+  }, [scene]);
 
   useEffect(() => {
     if (actions[animation]) {
@@ -38,6 +48,7 @@ export function Character({
       scale={scale} 
       position={position}
       rotation={[0, 0, 0]}
+      castShadow
     />
   );
 }
