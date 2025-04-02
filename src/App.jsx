@@ -15,7 +15,7 @@ function App() {
     <KeyboardControls map={keyboardMap}>
       <Canvas
         shadows
-        camera={{ position: [3, 3, 3], near: 0.1, fov: 40 }}
+        camera={{ position: [20, 10, 20], near: 0.1, fov: 40 }}
         style={{
           touchAction: "none",
         }}

@@ -1,46 +1,18 @@
-import { Environment, OrthographicCamera } from "@react-three/drei";
+import { Environment, OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Physics } from "@react-three/rapier";
-import { useControls } from "leva";
 import { useRef } from "react";
 import { CharacterController } from "./CharacterController";
+import { Character } from "./Character";
 import { Map } from "./Map";
-
-const maps = {
-  castle_on_hills: {
-    scale: 3,
-    position: [-6, -7, 0],
-  },
-  animal_crossing_map: {
-    scale: 20,
-    position: [-15, -1, 10],
-  },
-  city_scene_tokyo: {
-    scale: 0.72,
-    position: [0, -1, -3.5],
-  },
-  de_dust_2_with_real_light: {
-    scale: 0.3,
-    position: [-5, -3, 13],
-  },
-  medieval_fantasy_book: {
-    scale: 0.4,
-    position: [-4, 0, -6],
-  },
-};
 
 export const Experience = () => {
   const shadowCameraRef = useRef();
-  const { map } = useControls("Map", {
-    map: {
-      value: "castle_on_hills",
-      options: Object.keys(maps),
-    },
-  });
 
   return (
     <>
-      {/* <OrbitControls /> */}
       <Environment preset="sunset" />
+      
+      {/* 그림자 설정을 포함한 방향성 조명 */}
       <directionalLight
         intensity={0.65}
         castShadow
@@ -58,14 +30,27 @@ export const Experience = () => {
           attach={"shadow-camera"}
         />
       </directionalLight>
-      <Physics key={map}>
-        <Map
-          scale={maps[map].scale}
-          position={maps[map].position}
-          model={`models/${map}.glb`}
-        />
+
+      {/* 주변광 추가 */}
+      <ambientLight intensity={0.3} />
+
+      <OrbitControls/>
+
+      {/* 물리 시뮬레이션 */}
+      <Physics debug>
+        <Map />
         <CharacterController />
-      </Physics>
+      </Physics>/
+
+      {/* 장면 디버깅용 평면 추가 */}
+      <mesh 
+        rotation={[-Math.PI / 2, 0, 0]} 
+        position={[0, -1, 0]} 
+        receiveShadow
+      >
+        <planeGeometry args={[100, 100]} />
+        <shadowMaterial opacity={0.3} />
+      </mesh>
     </>
   );
 };

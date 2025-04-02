@@ -32,8 +32,8 @@ export const CharacterController = () => {
   const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED } = useControls(
     "Character Control",
     {
-      WALK_SPEED: { value: 0.8, min: 0.1, max: 4, step: 0.1 },
-      RUN_SPEED: { value: 1.6, min: 0.2, max: 12, step: 0.1 },
+      WALK_SPEED: { value: 3, min: 0.1, max: 4, step: 0.1 },
+      RUN_SPEED: { value: 6, min: 0.2, max: 12, step: 0.1 },
       ROTATION_SPEED: {
         value: degToRad(0.5),
         min: degToRad(0.1),
@@ -46,7 +46,7 @@ export const CharacterController = () => {
   const container = useRef();
   const character = useRef();
 
-  const [animation, setAnimation] = useState("idle");
+  const [animation, setAnimation] = useState("Idle");
 
   const characterRotationTarget = useRef(0);
   const rotationTarget = useRef(0);
@@ -97,11 +97,10 @@ export const CharacterController = () => {
       let speed = get().run ? RUN_SPEED : WALK_SPEED;
 
       if (isClicking.current) {
-        console.log("clicking", mouse.x, mouse.y);
         if (Math.abs(mouse.x) > 0.1) {
-          movement.x = -mouse.x;
+          // movement.x = -mouse.x;/
         }
-        movement.z = mouse.y + 0.4;
+        // movement.z = mouse.y + 0.4;
         if (Math.abs(movement.x) > 0.5 || Math.abs(movement.z) > 0.5) {
           speed = RUN_SPEED;
         }
@@ -127,12 +126,12 @@ export const CharacterController = () => {
           Math.cos(rotationTarget.current + characterRotationTarget.current) *
           speed;
         if (speed === RUN_SPEED) {
-          setAnimation("run");
+          setAnimation("Run");
         } else {
-          setAnimation("walk");
+          setAnimation("Walk");
         }
       } else {
-        setAnimation("idle");
+        setAnimation("Idle");
       }
       character.current.rotation.y = lerpAngle(
         character.current.rotation.y,
@@ -162,15 +161,15 @@ export const CharacterController = () => {
   });
 
   return (
-    <RigidBody colliders={false} lockRotations ref={rb}>
+    <RigidBody colliders={false} position={[0, 2, 0]} lockRotations ref={rb}>
       <group ref={container}>
         <group ref={cameraTarget} position-z={1.5} />
-        <group ref={cameraPosition} position-y={4} position-z={-4} />
+        <group ref={cameraPosition} position-y={10} position-z={-10} />
         <group ref={character}>
-          <Character scale={0.18} position-y={-0.25} animation={animation} />
+          <Character scale={0.02} position-y={1} animation={animation} />
         </group>
       </group>
-      <CapsuleCollider args={[0.08, 0.15]} />
+      <CapsuleCollider args={[1.7, 0.5]} position={[0, 2.2, 0]} />
     </RigidBody>
   );
 };
