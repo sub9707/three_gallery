@@ -52,7 +52,7 @@ export const Experience = () => {
           onButtonLeave={() => setButtonPressed(false)}
         />
         <Button
-          position={[0, 1, 6]}
+          position={[0, 0.5, 6]}
           rotation={[0, Math.PI, 0]}
           scale={1}
           onCollide={() => setButtonPressed(true)}

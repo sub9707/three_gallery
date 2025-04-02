@@ -6,14 +6,23 @@ Source: https://sketchfab.com/3d-models/low-poly-button-optimized-for-roblox-514
 Title: Low Poly Button - Optimized For Roblox
 */
 
-import React, { useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { RigidBody } from '@react-three/rapier'
 
 export function Button({ onCollide, onLeave, ...props }) {
     const group = useRef();
-    const { nodes, materials, animations } = useGLTF('/models/button.glb');
+    const { nodes, materials, animations, scene } = useGLTF('/models/button.glb');
     const { actions } = useAnimations(animations, group);
+
+    useEffect(() => {
+        scene.traverse((object) => {
+            if (object.isMesh) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+            }
+        });
+    }, [scene]);
 
     return (
         <RigidBody type="fixed" colliders="cuboid"
@@ -26,27 +35,33 @@ export function Button({ onCollide, onLeave, ...props }) {
                 if (other.rigidBodyObject?.userData?.isCharacter) {
                     onLeave?.();
                 }
-            }}>
-            <group ref={group} {...props} dispose={null}>
+            }}
+            position={[0,0,0]}
+            >
+            <group ref={group} {...props} dispose={null} castShadow receiveShadow>
                 <group name="Sketchfab_Scene">
-                    <group name="Sketchfab_model" rotation={[-Math.PI / 2, 0, 0]}>
+                    <group name="Sketchfab_model" rotation={[-Math.PI / 2, 0, 0]} castShadow>
                         <group
                             name="d757a1532ad54fc598cab5f4bcbe806cfbx"
                             rotation={[Math.PI / 2, 0, 0]}
-                            scale={0.01}>
-                            <group name="Object_2">
-                                <group name="RootNode">
-                                    <group name="switch" rotation={[-Math.PI / 2, 0, 0]} scale={100} />
-                                    <group name="switch_armature" rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                                        <group name="Object_6">
+                            scale={0.01}
+                            castShadow
+                        >
+                            {/* 모든 하위 그룹에 castShadow 추가 */}
+                            <group name="Object_2" castShadow>
+                                <group name="RootNode" castShadow>
+                                    <group name="switch" rotation={[-Math.PI / 2, 0, 0]} scale={100} castShadow />
+                                    <group name="switch_armature" rotation={[-Math.PI / 2, 0, 0]} scale={100} castShadow>
+                                        <group name="Object_6" castShadow>
                                             <primitive object={nodes._rootJoint} />
                                             <skinnedMesh
                                                 name="Object_9"
                                                 geometry={nodes.Object_9.geometry}
                                                 material={materials.UV_switch}
                                                 skeleton={nodes.Object_9.skeleton}
+                                                castShadow
+                                                receiveShadow
                                             />
-                                            <group name="Object_8" rotation={[-Math.PI / 2, 0, 0]} scale={100} />
                                         </group>
                                     </group>
                                 </group>
