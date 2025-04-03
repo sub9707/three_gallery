@@ -6,6 +6,9 @@ import { Map } from "./Map";
 import { Button } from "./Button";
 import { Overlay } from "./Overlay";
 import TestModal from "./TestModal";
+import { TextComp } from "./TextComp";
+import { Earth } from "./Earth";
+import { Perf } from "r3f-perf";
 
 export const Experience = () => {
   const shadowCameraRef = useRef();
@@ -42,11 +45,14 @@ export const Experience = () => {
       {/* 주변광 추가 */}
       <ambientLight intensity={0.35} />
 
+      {/* 디버깅 툴 */}
       <OrbitControls />
+      <Perf position="top-left" />
 
-      {/* HTML 오버레이 컴포넌트 */}
+      {/* HTML 오버레이 컴포넌트 [test] */}
       <Overlay buttonPressed={buttonPressed} />
-      <TestModal modalOpen={modalOpen} modalClose={()=>setModalOpen(false)}/>
+      <TestModal modalOpen={modalOpen} modalClose={() => setModalOpen(false)} />
+      <TextComp text="Floating Text" position={[7, 2, 6]} color="blue" />
       {/* 물리 작용 요소들 */}
       <Physics debug>
         <Map />
@@ -60,9 +66,13 @@ export const Experience = () => {
           scale={1}
           onCollide={() => setButtonPressed(true)}
           onLeave={() => setButtonPressed(false)}
-          onPushed={()=>setModalOpen(true)}
-          onExit={()=>setModalOpen(false)}
+          onPushed={() => setModalOpen(true)}
+          onExit={() => setModalOpen(false)}
         />
+        <Earth
+          position={[-7, 3.5, 6]}
+          rotation={[0, Math.PI, 0]}
+          scale={2} />
       </Physics>
 
       {/* 장면 디버깅용 평면 추가 */}
