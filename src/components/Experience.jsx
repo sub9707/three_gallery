@@ -5,10 +5,12 @@ import { CharacterController } from "./CharacterController";
 import { Map } from "./Map";
 import { Button } from "./Button";
 import { Overlay } from "./Overlay";
+import TestModal from "./TestModal";
 
 export const Experience = () => {
   const shadowCameraRef = useRef();
   const [buttonPressed, setButtonPressed] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   return (
     <>
       {/* 부드러운 그림자 효과 추가 */}
@@ -44,6 +46,7 @@ export const Experience = () => {
 
       {/* HTML 오버레이 컴포넌트 */}
       <Overlay buttonPressed={buttonPressed} />
+      <TestModal modalOpen={modalOpen} modalClose={()=>setModalOpen(false)}/>
       {/* 물리 작용 요소들 */}
       <Physics debug>
         <Map />
@@ -57,6 +60,8 @@ export const Experience = () => {
           scale={1}
           onCollide={() => setButtonPressed(true)}
           onLeave={() => setButtonPressed(false)}
+          onPushed={()=>setModalOpen(true)}
+          onExit={()=>setModalOpen(false)}
         />
       </Physics>
 
